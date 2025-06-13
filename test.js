@@ -23,6 +23,7 @@ const userData = {
   email: 'charbit.samuel@gmail.com',
 }
 
+
 // GET users list
 app.get('/users', async (req, res) => {
   // check if user is admin
@@ -35,25 +36,30 @@ app.get('/users', async (req, res) => {
   }
 });
 
-
-//- `POST /orders` → Customer-only: creates a new order
-app.post('/orders', async (req, res) => {
-  const user = await permit.api.users.get(userData.id);
-  if (user.role === 'customer') {
-    const order = await permit.api.orders.create(req.body);
-    res.json(order);
-  } else {
-    res.status(403).send('Unauthorized');
+// Test route for Permit.io
+app.get('/test-permit', async (req, res) => {
+  try {
+    // Create the admin user
+    await permit.api.syncUser({ key: 'adminUser', email: 'admin@example.com' });
+    
+    // Assign the admin role
+    await permit.api.assignRole('adminUser', 'admin', 'default');
+    
+    // Check permissions
+    const permitted = await permit.check('adminUser', 'read', 'users');
+    
+    res.json({
+      success: true,
+      message: 'Tests completed successfully',
+      permissionCheck: permitted
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
   }
 });
-
-//- `GET /orders/:id` → Admin or Customer: view an order
-app.get('/orders/:id', async (req, res) => {
-  const user = await permit.api.users.get(userData.id);
-  if (user.role === 'admin' || user.role === 'customer') {
-    const order = await permit.api.orders.get(req.params.id);
-    res.json(order);
-  } else {
 
 app.listen(port, () => {
   console.log('Example app listening at http://localhost:'+port);
