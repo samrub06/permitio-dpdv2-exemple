@@ -20,7 +20,7 @@ const permit = new Permit({
 
 
 
-// Test create user and check permission
+// Unconsistent user creation test
 app.post('/user', async (req, res) => {
   const { user, email, tenant, role } = req.body;
   try {
@@ -49,16 +49,9 @@ app.post('/user', async (req, res) => {
   }
 });
 
-// test permission route 
-app.post('/test-permission', async (req, res) => {
-  const { user, action, resource, tenant } = req.body;
-  const allowed = await permit.check(user, action, resource, tenant);
-  res.status(200).send(allowed ? "✅ Access Authorized" : "❌ Access Denied");
-});
 
-
-// Test route for Permit.io
-app.post('/test-permit', async (req, res) => {
+// Check permission route 
+app.post('/check-permission', async (req, res) => {
   const { user, action, resource, tenant } = req.body;
   let permitted = null;
   console.log('🧪 Start Permit.io tests');
@@ -69,27 +62,27 @@ app.post('/test-permit', async (req, res) => {
     // Check Environment
     console.log('🏢 Check Environment...');
 
-    const environments = await permit.api.environments.list({ projectKey: "project-a" });
-    console.log('🏢 Environments:', environments.map(env => env.name));
+    const environments = await permit?.api?.environments?.list({ projectKey: "project-a" });
+    console.log('🏢 Environments:', environments?.map(env => env.name));
 
     // Check project symbol put in env   
-    const project = await permit.api.projects.getByKey(environments[0].project_id);
+    const project = await permit?.api?.projects?.getByKey(environments[0].project_id);
     console.log(`🔑 Project key : ${project.key} and name : ${project.name}`);
 
 
     // Check user
-    const userData = await permit.api.users.getByKey(user);
-    console.log(`👤 user: ${userData.email}, action: ${action}, resource: ${resource}`);
+    const userData = await permit?.api?.users?.getByKey(user);
+    console.log(`👤 user: ${userData?.email}, action: ${action}, resource: ${resource}`);
     console.log(`👤 user: ${user}, action: ${action}, resource: ${resource}`);
 
 
     // Add tenant to resource
     if (tenant) {
       const resourceWithTenant = { type: resource, tenant: tenant };
-      permitted = await permit.check(user, action, resourceWithTenant);
+      permitted = await permit?.check(user, action, resourceWithTenant);
       console.log('✅ Permissions with tenant check result:', permitted);
     } else {
-      permitted = await permit.check(user, action, resource);
+      permitted = await permit?.check(user, action, resource);
       console.log('✅ Permissions check result:', permitted);
     }
 
@@ -117,6 +110,25 @@ app.post('/test-permit', async (req, res) => {
     });
   }
 });
+
+// check wrong environment
+app.post('/check-environment', async (req, res) => {
+  try {
+    const { user, action, resource, tenant } = req.body;
+    const permitted = await permit?.check(user, action, resource, tenant);
+    res.status(200).send(permitted ? "✅ Access Authorized" : "❌ Access Denied");
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      details: {
+        code: error.code,
+        status: error.status
+      }
+    });
+  }
+});
+
 
 app.listen(port, () => {
   console.log('Example app listening at http://localhost:' + port);
